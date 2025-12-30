@@ -114,8 +114,7 @@ class Device:
     @property
     def is_powered_on(self) -> bool:
         """Return true if the device is powered on."""
-        with self._state_lock:
-            return self._state.is_powered_on
+        return self._state.is_powered_on
 
     async def set_powered_on(self, value: bool) -> None:
         """Set the device power state."""
@@ -134,8 +133,7 @@ class Device:
     @property 
     def heat_mode(self) -> HeatMode:
         """Return the current heat mode."""
-        with self._state_lock:
-            return self._state.heat_mode
+        return self._state.heat_mode
 
     async def set_heat_mode(self, mode: HeatMode) -> None:
         """Set the heat mode."""
@@ -181,8 +179,7 @@ class Device:
     @property
     def thermostat(self) -> int:
         """Return the current thermostat temperature."""
-        with self._state_lock:
-            return self._state.thermostat
+        return self._state.thermostat
 
     async def set_thermostat(self, temperature: int) -> None:
         """Set the thermostat temperature."""
@@ -196,8 +193,7 @@ class Device:
     @property
     def flame_color(self) -> Color:
         """Return the current flame color."""
-        with self._state_lock:
-            return self._state.flame_color
+        return self._state.flame_color
 
     async def set_flame_color(self, color: Color) -> None:
         """Set the flame color."""
@@ -211,8 +207,7 @@ class Device:
     @property
     def bed_color(self) -> Color:
         """Return the current bed color."""
-        with self._state_lock:
-            return self._state.bed_color
+        return self._state.bed_color
 
     async def set_bed_color(self, color: Color) -> None:
         """Set the bed color."""
@@ -226,8 +221,7 @@ class Device:
     @property
     def flame_brightness(self) -> int:
         """Return the current flame brightness level."""
-        with self._state_lock:
-            return self._state.flame_brightness
+        return self._state.flame_brightness
 
     async def set_flame_brightness(self, brightness: int) -> None:
         """Set the flame brightness level."""
@@ -253,8 +247,7 @@ class Device:
     @property
     def bed_brightness(self) -> int:
         """Return the current bed brightness level."""
-        with self._state_lock:
-            return self._state.bed_brightness
+        return self._state.bed_brightness
 
     async def set_bed_brightness(self, brightness: int) -> None:
         """Set the bed brightness level."""
