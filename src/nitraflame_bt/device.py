@@ -119,6 +119,9 @@ class Device:
 
     async def set_powered_on(self, value: bool) -> None:
         """Set the device power state."""
+        if not self._is_connected:
+            await self.connect(retry_attempts=1)
+
         async with self._state_lock:
             old_value = self._state.is_powered_on
             self._state.is_powered_on = value
@@ -136,6 +139,9 @@ class Device:
 
     async def set_heat_mode(self, mode: HeatMode) -> None:
         """Set the heat mode."""
+        if not self._is_connected:
+            await self.connect(retry_attempts=1)
+        
         async with self._state_lock:
             if not self.is_powered_on and mode != HeatMode.OFF:
                 # Cannot set heat mode if the device is powered off.
@@ -148,7 +154,6 @@ class Device:
             # Only send commands if the heat mode has changed.
             if old_value == mode:
                 return
-
 
             # Heat selection works in sequential steps as follows: 
             # To go from off to low -> send SET_HEAT_LOW cmd (step up)
@@ -181,6 +186,9 @@ class Device:
 
     async def set_thermostat(self, temperature: int) -> None:
         """Set the thermostat temperature."""
+        if not self._is_connected:
+            await self.connect(retry_attempts=1)
+        
         async with self._state_lock:
             self._state.set_thermostat(temperature)
             await self._send_cmd(Command.SET_THERMOSTAT.value + bytes([self._state.thermostat]))
@@ -193,6 +201,9 @@ class Device:
 
     async def set_flame_color(self, color: Color) -> None:
         """Set the flame color."""
+        if not self._is_connected:
+            await self.connect(retry_attempts=1)
+     
         async with self._state_lock:
             self._state.flame_color = color
             await self._send_cmd(Command.SET_FLAME_COLOR.value + bytes([self._state.flame_color.value]))
@@ -205,6 +216,9 @@ class Device:
 
     async def set_bed_color(self, color: Color) -> None:
         """Set the bed color."""
+        if not self._is_connected:
+            await self.connect(retry_attempts=1)
+     
         async with self._state_lock:
             self._state.bed_color = color
             await self._send_cmd(Command.SET_BED_COLOR.value + bytes([self._state.bed_color.value]))
@@ -217,6 +231,9 @@ class Device:
 
     async def set_flame_brightness(self, brightness: int) -> None:
         """Set the flame brightness level."""
+        if not self._is_connected:
+            await self.connect(retry_attempts=1)
+     
         async with self._state_lock:
             old_value = self._state.flame_brightness
             self._state.set_flame_brightness(brightness)
@@ -241,6 +258,9 @@ class Device:
 
     async def set_bed_brightness(self, brightness: int) -> None:
         """Set the bed brightness level."""
+        if not self._is_connected:
+            await self.connect(retry_attempts=1)
+     
         async with self._state_lock:
             old_value = self._state.bed_brightness
             self._state.set_bed_brightness(brightness)
