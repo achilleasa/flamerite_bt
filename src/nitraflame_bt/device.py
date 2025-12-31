@@ -92,6 +92,10 @@ class Device:
         await self._connection.disconnect()
         _LOGGER.debug("Disconnected from %s", self._mac)
 
+    def update_ble_device(self, ble_device: BLEDevice) -> None:
+        """Update the underlying BLE device reference."""
+        self._ble_device = ble_device
+
     async def query_state(self) -> None:
         """Query the device state."""
         if not self._is_connected:
