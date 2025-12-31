@@ -20,7 +20,9 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def main():
-    ble_devices = await scan_for_nitraflame_devices(max_devices=1,scan_timeout_seconds=40)
+    ble_devices = await scan_for_nitraflame_devices(
+        max_devices=1, scan_timeout_seconds=40
+    )
     if len(ble_devices) == 0:
         _LOGGER.warning("No devices found")
         return
@@ -33,17 +35,17 @@ async def main():
 
         # Take user input
         line = await aioconsole.ainput(
-            "Commands:\n" +
-            "fc=<value> -> set flame color\n" +
-            "bc=<value> -> set bed color\n" +
-            "fb=<value> -> set flame brightness\n" +
-            "bb=<value> -> set bed brightness\n" +
-            "t=<value>  -> set thermostat temperature\n" + 
-            "hm=<value> -> set heat mode (OFF, LOW, HIGH)\n" +
-            "on         -> turn on\n" +
-            "off        -> turn off\n" +
-            "cmd=<value>-> run command\n" +
-            "\nOr 'exit' to disconnect:\n"
+            "Commands:\n"
+            + "fc=<value> -> set flame color\n"
+            + "bc=<value> -> set bed color\n"
+            + "fb=<value> -> set flame brightness\n"
+            + "bb=<value> -> set bed brightness\n"
+            + "t=<value>  -> set thermostat temperature\n"
+            + "hm=<value> -> set heat mode (OFF, LOW, HIGH)\n"
+            + "on         -> turn on\n"
+            + "off        -> turn off\n"
+            + "cmd=<value>-> run command\n"
+            + "\nOr 'exit' to disconnect:\n"
         )
 
         if line == "exit":
