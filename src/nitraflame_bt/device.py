@@ -11,7 +11,7 @@ from bleak_retry_connector import (
 )
 
 from .state import State
-from .const import DEVICE_READ_ATTR_UUID, DEVICE_WRITE_ATTR_UUID, DEVICE_RESPONSE_TIMEOUT_SECONDS, Command, Color, HeatMode
+from .const import DEVICE_RESPONSE_TIMEOUT_SECONDS, Command, Color, HeatMode, DeviceAttribute
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,6 +23,9 @@ class Device:
     _connection_lock = asyncio.Lock()
     _is_connected: bool
     _mac: str
+    _model_number: str
+    _srial_number: str
+    _manufacturer: str
     
     _state_lock = asyncio.Lock()
     _state: State 
@@ -60,16 +63,23 @@ class Device:
                 )
 
                 self._is_connected = True
-                _LOGGER.debug("Successfully connected to %s", self._mac)
 
+                self._model_number = (await self._connection.read_gatt_char(DeviceAttribute.MODEL_NUMBER.value)).decode('utf-8').strip('\x00')
+                self._serial_number = (await self._connection.read_gatt_char(DeviceAttribute.SERIAL_NUMBER.value)).decode('utf-8').strip('\x00')
+                self._manufacturer = (await self._connection.read_gatt_char(DeviceAttribute.MANUFACTURER.value)).decode('utf-8').strip('\x00')
+                _LOGGER.info("Connected to device %s (Model: %s, Serial: %s, Manufacturer: %s)",
+                             self._mac, 
+                             self._model_number,
+                             self._serial_number,
+                             self._manufacturer)
+
+                # To interface with the device we first write a command to DEVICE_WRITE_ATTR_UUID and wait for an 
+                # asynchronous notification to be received on DEVICE_READ_ATTR_UUID.
                 def on_notify(sender: int, data: bytearray):
                     """Notification handler which updates the device state."""
                     if self._state.update_from_bytes(data):
                         self._state_updated.set()
-
-                # To interface with the device we first write a command to DEVICE_WRITE_ATTR_UUID and wait for an 
-                # asynchronous notification to be received on DEVICE_READ_ATTR_UUID.
-                await self._connection.start_notify(DEVICE_READ_ATTR_UUID, on_notify)
+                await self._connection.start_notify(DeviceAttribute.CMD_RES_ATTR.value, on_notify)
             except BleakError as ex:
                 _LOGGER.error("Failed to connect to %s: %s", self._mac, ex)
                 self._is_connected = False
@@ -89,7 +99,7 @@ class Device:
 
         async with self._state_lock:
             self._state_updated.clear()
-            await self._connection.write_gatt_char(DEVICE_WRITE_ATTR_UUID, Command.QUERY_STATE.value, response=True)
+            await self._send_cmd(Command.QUERY_STATE.value)
             try:
                 await asyncio.wait_for(self._state_updated.wait(), timeout=DEVICE_RESPONSE_TIMEOUT_SECONDS)
                 _LOGGER.debug("Updated state: %s", self._state)
@@ -99,7 +109,7 @@ class Device:
 
     async def _send_cmd(self, cmd_bytes: bytes) -> None:
         """Send a command to the device."""
-        await self._connection.write_gatt_char(DEVICE_WRITE_ATTR_UUID, cmd_bytes, response=True)
+        await self._connection.write_gatt_char(DeviceAttribute.CMD_REQ_ATTR.value, cmd_bytes, response=True)
 
     @property
     def is_connected(self) -> bool:
@@ -110,6 +120,21 @@ class Device:
     def mac(self) -> str:
         """Return the MAC address of the connected device."""
         return self._mac
+
+    @property
+    def model_number(self) -> str:
+        """Return the model number of the connected device."""
+        return self._model_number
+    
+    @property
+    def serial_number(self) -> str:
+        """Return the serial number of the connected device."""
+        return self._serial_number
+    
+    @property
+    def manufacturer(self) -> str:
+        """Return the manufacturer of the connected device."""
+        return self._manufacturer
 
     @property
     def is_powered_on(self) -> bool:

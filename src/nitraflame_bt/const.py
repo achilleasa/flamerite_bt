@@ -3,12 +3,19 @@
 from enum import Enum,IntEnum
 
 DEVICE_NAME = "NITRAFlame"
-DEVICE_SVC_UUID = '0000fff0-0000-1000-8000-00805f9b34fb'
-DEVICE_READ_ATTR_UUID = '0000fff1-0000-1000-8000-00805f9b34fb'
-DEVICE_WRITE_ATTR_UUID = '0000fff2-0000-1000-8000-00805f9b34fb'
 
 # The maximum time to wait for a response from the device when querying its state.
 DEVICE_RESPONSE_TIMEOUT_SECONDS = 5
+
+class DeviceAttribute(Enum):
+    """Device attributes that can be queried."""
+
+    MODEL_NUMBER = "00002a24-0000-1000-8000-00805f9b34fb"
+    SERIAL_NUMBER = "00002a25-0000-1000-8000-00805f9b34fb"
+    MANUFACTURER = "00002a29-0000-1000-8000-00805f9b34fb"
+
+    CMD_REQ_ATTR = "0000fff2-0000-1000-8000-00805f9b34fb"
+    CMD_RES_ATTR = "0000fff1-0000-1000-8000-00805f9b34fb"
 
 class Color(IntEnum):
     """Available flame and bed colors.
