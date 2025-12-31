@@ -6,14 +6,21 @@ import logging
 from bleak.backends.device import BLEDevice
 from bleak.exc import BleakError
 from bleak_retry_connector import (
-    BleakClient,  # type: ignore 
+    BleakClient,  # type: ignore
     establish_connection,
 )
 
 from .state import State
-from .const import DEVICE_RESPONSE_TIMEOUT_SECONDS, Command, Color, HeatMode, DeviceAttribute
+from .const import (
+    DEVICE_RESPONSE_TIMEOUT_SECONDS,
+    Command,
+    Color,
+    HeatMode,
+    DeviceAttribute,
+)
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class Device:
     """A wrapper class to interact with NITRAFLame Bluetooth devices."""
@@ -26,9 +33,9 @@ class Device:
     _model_number: str
     _srial_number: str
     _manufacturer: str
-    
+
     _state_lock = asyncio.Lock()
-    _state: State 
+    _state: State
     _state_updated: asyncio.Event = asyncio.Event()
 
     def __init__(self, ble_device: BLEDevice) -> None:
@@ -64,22 +71,51 @@ class Device:
 
                 self._is_connected = True
 
-                self._model_number = (await self._connection.read_gatt_char(DeviceAttribute.MODEL_NUMBER.value)).decode('utf-8').strip('\x00')
-                self._serial_number = (await self._connection.read_gatt_char(DeviceAttribute.SERIAL_NUMBER.value)).decode('utf-8').strip('\x00')
-                self._manufacturer = (await self._connection.read_gatt_char(DeviceAttribute.MANUFACTURER.value)).decode('utf-8').strip('\x00')
-                _LOGGER.info("Connected to device %s (Model: %s, Serial: %s, Manufacturer: %s)",
-                             self._mac, 
-                             self._model_number,
-                             self._serial_number,
-                             self._manufacturer)
+                self._model_number = (
+                    (
+                        await self._connection.read_gatt_char(
+                            DeviceAttribute.MODEL_NUMBER.value
+                        )
+                    )
+                    .decode("utf-8")
+                    .strip("\x00")
+                )
+                self._serial_number = (
+                    (
+                        await self._connection.read_gatt_char(
+                            DeviceAttribute.SERIAL_NUMBER.value
+                        )
+                    )
+                    .decode("utf-8")
+                    .strip("\x00")
+                )
+                self._manufacturer = (
+                    (
+                        await self._connection.read_gatt_char(
+                            DeviceAttribute.MANUFACTURER.value
+                        )
+                    )
+                    .decode("utf-8")
+                    .strip("\x00")
+                )
+                _LOGGER.info(
+                    "Connected to device %s (Model: %s, Serial: %s, Manufacturer: %s)",
+                    self._mac,
+                    self._model_number,
+                    self._serial_number,
+                    self._manufacturer,
+                )
 
-                # To interface with the device we first write a command to DEVICE_WRITE_ATTR_UUID and wait for an 
+                # To interface with the device we first write a command to DEVICE_WRITE_ATTR_UUID and wait for an
                 # asynchronous notification to be received on DEVICE_READ_ATTR_UUID.
                 def on_notify(sender: int, data: bytearray):
                     """Notification handler which updates the device state."""
                     if self._state.update_from_bytes(data):
                         self._state_updated.set()
-                await self._connection.start_notify(DeviceAttribute.CMD_RES_ATTR.value, on_notify)
+
+                await self._connection.start_notify(
+                    DeviceAttribute.CMD_RES_ATTR.value, on_notify
+                )
             except BleakError as ex:
                 _LOGGER.error("Failed to connect to %s: %s", self._mac, ex)
                 self._is_connected = False
@@ -105,7 +141,9 @@ class Device:
             self._state_updated.clear()
             await self._send_cmd(Command.QUERY_STATE.value)
             try:
-                await asyncio.wait_for(self._state_updated.wait(), timeout=DEVICE_RESPONSE_TIMEOUT_SECONDS)
+                await asyncio.wait_for(
+                    self._state_updated.wait(), timeout=DEVICE_RESPONSE_TIMEOUT_SECONDS
+                )
                 _LOGGER.debug("Updated state: %s", self._state)
             except asyncio.TimeoutError:
                 _LOGGER.error("Timeout waiting for state response from %s", self._mac)
@@ -113,7 +151,9 @@ class Device:
 
     async def _send_cmd(self, cmd_bytes: bytes) -> None:
         """Send a command to the device."""
-        await self._connection.write_gatt_char(DeviceAttribute.CMD_REQ_ATTR.value, cmd_bytes, response=True)
+        await self._connection.write_gatt_char(
+            DeviceAttribute.CMD_REQ_ATTR.value, cmd_bytes, response=True
+        )
 
     @property
     def is_connected(self) -> bool:
@@ -129,12 +169,12 @@ class Device:
     def model_number(self) -> str:
         """Return the model number of the connected device."""
         return self._model_number
-    
+
     @property
     def serial_number(self) -> str:
         """Return the serial number of the connected device."""
         return self._serial_number
-    
+
     @property
     def manufacturer(self) -> str:
         """Return the manufacturer of the connected device."""
@@ -157,9 +197,9 @@ class Device:
             # Toggle power only if the state has changed.
             if old_value == value:
                 return
-            await self._send_cmd(Command.POWER_TOGGLE.value) 
+            await self._send_cmd(Command.POWER_TOGGLE.value)
 
-    @property 
+    @property
     def heat_mode(self) -> HeatMode:
         """Return the current heat mode."""
         return self._state.heat_mode
@@ -168,7 +208,7 @@ class Device:
         """Set the heat mode."""
         if not self._is_connected:
             await self.connect(retry_attempts=1)
-        
+
         async with self._state_lock:
             if not self.is_powered_on and mode != HeatMode.OFF:
                 # Cannot set heat mode if the device is powered off.
@@ -182,14 +222,14 @@ class Device:
             if old_value == mode:
                 return
 
-            # Heat selection works in sequential steps as follows: 
+            # Heat selection works in sequential steps as follows:
             # To go from off to low -> send SET_HEAT_LOW cmd (step up)
-            # To go from low -> off -> send SET_HEAT_LOW cmd (step down) 
+            # To go from low -> off -> send SET_HEAT_LOW cmd (step down)
             # To go from low -> high -> send SET_HEAT_HIGH cmd (step up)
             # To go from high -> low -> send SET_HEAT_LOW cmd (step down)
             if old_value == HeatMode.OFF:
                 if mode == HeatMode.LOW:
-                    await self._send_cmd(Command.SET_HEAT_LOW.value) 
+                    await self._send_cmd(Command.SET_HEAT_LOW.value)
                 elif mode == HeatMode.HIGH:
                     await self._send_cmd(Command.SET_HEAT_LOW.value)
                     await self._send_cmd(Command.SET_HEAT_HIGH.value)
@@ -214,10 +254,12 @@ class Device:
         """Set the thermostat temperature."""
         if not self._is_connected:
             await self.connect(retry_attempts=1)
-        
+
         async with self._state_lock:
             self._state.set_thermostat(temperature)
-            await self._send_cmd(Command.SET_THERMOSTAT.value + bytes([self._state.thermostat]))
+            await self._send_cmd(
+                Command.SET_THERMOSTAT.value + bytes([self._state.thermostat])
+            )
 
     @property
     def flame_color(self) -> Color:
@@ -228,10 +270,12 @@ class Device:
         """Set the flame color."""
         if not self._is_connected:
             await self.connect(retry_attempts=1)
-     
+
         async with self._state_lock:
             self._state.flame_color = color
-            await self._send_cmd(Command.SET_FLAME_COLOR.value + bytes([self._state.flame_color.value]))
+            await self._send_cmd(
+                Command.SET_FLAME_COLOR.value + bytes([self._state.flame_color.value])
+            )
 
     @property
     def bed_color(self) -> Color:
@@ -242,10 +286,12 @@ class Device:
         """Set the bed color."""
         if not self._is_connected:
             await self.connect(retry_attempts=1)
-     
+
         async with self._state_lock:
             self._state.bed_color = color
-            await self._send_cmd(Command.SET_BED_COLOR.value + bytes([self._state.bed_color.value]))
+            await self._send_cmd(
+                Command.SET_BED_COLOR.value + bytes([self._state.bed_color.value])
+            )
 
     @property
     def flame_brightness(self) -> int:
@@ -256,7 +302,7 @@ class Device:
         """Set the flame brightness level."""
         if not self._is_connected:
             await self.connect(retry_attempts=1)
-     
+
         async with self._state_lock:
             old_value = self._state.flame_brightness
             self._state.set_flame_brightness(brightness)
@@ -282,7 +328,7 @@ class Device:
         """Set the bed brightness level."""
         if not self._is_connected:
             await self.connect(retry_attempts=1)
-     
+
         async with self._state_lock:
             old_value = self._state.bed_brightness
             self._state.set_bed_brightness(brightness)

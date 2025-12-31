@@ -1,9 +1,19 @@
 """NITRAFlame state parsing logic."""
 
 import logging
-from .const import HeatMode, Color, THERMOSTAT_MIN, THERMOSTAT_MAX, BRIGHTNESS_MIN, BRIGHTNESS_MAX, COLOR_MIN, COLOR_MAX
+from .const import (
+    HeatMode,
+    Color,
+    THERMOSTAT_MIN,
+    THERMOSTAT_MAX,
+    BRIGHTNESS_MIN,
+    BRIGHTNESS_MAX,
+    COLOR_MIN,
+    COLOR_MAX,
+)
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class State:
     """Representation of the NITRAFlame device state."""
@@ -20,11 +30,11 @@ class State:
         self.is_powered_on = False
         self.heat_mode = HeatMode.OFF
         self.thermostat = THERMOSTAT_MIN
-        self.flame_color = Color.ORANGE_0 
+        self.flame_color = Color.ORANGE_0
         self.bed_color = Color.ORANGE_0
-        self.flame_brightness = BRIGHTNESS_MIN 
-        self.bed_brightness = BRIGHTNESS_MIN 
-    
+        self.flame_brightness = BRIGHTNESS_MIN
+        self.bed_brightness = BRIGHTNESS_MIN
+
     def update_from_bytes(self, data: bytearray) -> bool:
         """Update state from raw byte data read from the device. Returns True if the update was successful."""
 
@@ -40,7 +50,7 @@ class State:
         exp_res_payload_len = 7
         state_payload = data[2:]
         if len(state_payload) != exp_res_payload_len:
-          return False
+            return False
 
         # Response payload has the following structure:
         # [0] device state (0x0a: off; 0x0b: on - no heat, 0x0c: on - low heat, 0x0d: on - high heat)
@@ -50,11 +60,19 @@ class State:
         # [4] bed brightness (0 to 9)
         # [5] flame color
         # [6] bed color
-        self.is_powered_on = int(state_payload[0]) > 0x0a
-        self.heat_mode = HeatMode(int(state_payload[0])) if self.is_powered_on else HeatMode.OFF
-        self.thermostat = clamp(int(state_payload[2]) + 16, THERMOSTAT_MIN, THERMOSTAT_MAX)
-        self.flame_brightness = clamp(1 + int(state_payload[3]), BRIGHTNESS_MIN, BRIGHTNESS_MAX)
-        self.bed_brightness = clamp(1 + int(state_payload[4]), BRIGHTNESS_MIN, BRIGHTNESS_MAX)
+        self.is_powered_on = int(state_payload[0]) > 0x0A
+        self.heat_mode = (
+            HeatMode(int(state_payload[0])) if self.is_powered_on else HeatMode.OFF
+        )
+        self.thermostat = clamp(
+            int(state_payload[2]) + 16, THERMOSTAT_MIN, THERMOSTAT_MAX
+        )
+        self.flame_brightness = clamp(
+            1 + int(state_payload[3]), BRIGHTNESS_MIN, BRIGHTNESS_MAX
+        )
+        self.bed_brightness = clamp(
+            1 + int(state_payload[4]), BRIGHTNESS_MIN, BRIGHTNESS_MAX
+        )
         self.flame_color = Color(clamp(int(state_payload[5]), COLOR_MIN, COLOR_MAX))
         self.bed_color = Color(clamp(int(state_payload[6]), COLOR_MIN, COLOR_MAX))
         return True
@@ -65,7 +83,7 @@ class State:
 
     def set_bed_brightness(self, brightness: int) -> None:
         """Set the bed brightness level (1-10)."""
-        self.bed_brightness = clamp(brightness, BRIGHTNESS_MIN, BRIGHTNESS_MAX) 
+        self.bed_brightness = clamp(brightness, BRIGHTNESS_MIN, BRIGHTNESS_MAX)
 
     def set_flame_brightness(self, brightness: int) -> None:
         """Set the flame brightness level (1-10)."""
