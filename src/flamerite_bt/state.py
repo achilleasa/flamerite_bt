@@ -1,4 +1,4 @@
-"""NITRAFlame state parsing logic."""
+"""Flamerite state parsing logic."""
 
 from .const import (
     HeatMode,
@@ -12,7 +12,7 @@ from .const import (
 )
 
 class State:
-    """Representation of the NITRAFlame device state."""
+    """Representation of the Flamerite device state."""
 
     is_on: bool
     heat_mode: HeatMode
@@ -49,7 +49,7 @@ class State:
             return False
 
         # Response payload has the following structure:
-        # [0] device state (0x0a: off; 0x0b: on - no heat, 0x0c: on - low heat, 0x0d: on - high heat)
+        # [0] device state (0x0a: off; 0x0b: on - no heat, 0x0c: on - low heat, 0x0d: on - high hea)
         # [1] unknown
         # [2] thermostat temperature offset (0 to 15); add 16 to convert to the actual thermostat value
         # [3] flame brightness (0 to 9)

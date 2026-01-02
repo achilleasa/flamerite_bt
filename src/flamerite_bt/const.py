@@ -1,30 +1,33 @@
-"""Constants for the NITRAFlame Bluetooth integration."""
+"""Constants for the Flamerite Bluetooth integration."""
 
 from enum import Enum, IntEnum
 
-DEVICE_NAME = "NITRAFlame"
-
 # The maximum time to wait for a response from the device when querying its state.
 DEVICE_RESPONSE_TIMEOUT_SECONDS = 5
+
+SUPPORTED_DEVICE_NAMES = ["NITRAFlame"]
 
 
 class DeviceAttribute(Enum):
     """Device attributes that can be queried."""
 
+    # Read-only
     MODEL_NUMBER = "00002a24-0000-1000-8000-00805f9b34fb"
     SERIAL_NUMBER = "00002a25-0000-1000-8000-00805f9b34fb"
     FW_REVISION = "00002a26-0000-1000-8000-00805f9b34fb"
     HW_REVISION = "00002a27-0000-1000-8000-00805f9b34fb"
     MANUFACTURER = "00002a29-0000-1000-8000-00805f9b34fb"
 
+    # Readable via subscribing to a notification callback.
     CMD_REQ_ATTR = "0000fff2-0000-1000-8000-00805f9b34fb"
+    # Writeable
     CMD_RES_ATTR = "0000fff1-0000-1000-8000-00805f9b34fb"
 
 
 class Color(IntEnum):
     """Available flame and bed colors.
 
-    NITRAFlame devices support 5 color palettes. Each color has 4 variations (e.g., ORANGE_0 to ORANGE_3)
+    The devices support 5 color palettes. Each color has 4 variations (e.g., ORANGE_1 to ORANGE_4)
     with increasing intensity. In addition, there are 5 CYCLE modes that cycle through all colors with CYCLE_ORANGE_ONLY cycling
     only between orange hues."""
 
@@ -57,7 +60,13 @@ class Color(IntEnum):
 
     def __str__(self):
         tokens = self.name.split("_")
-        if self in [Color.CYCLE_1, Color.CYCLE_1, Color.CYCLE_2, Color.CYCLE_3, Color.CYCLE_4]:
+        if self in [
+            Color.CYCLE_1,
+            Color.CYCLE_1,
+            Color.CYCLE_2,
+            Color.CYCLE_3,
+            Color.CYCLE_4,
+        ]:
             return f"Cycle colors (variation {tokens[1]})"
         if self is Color.CYCLE_ORANGE_ONLY:
             return "Cycle colors (orange hues)"
@@ -67,7 +76,7 @@ class Color(IntEnum):
 
 
 class HeatMode(IntEnum):
-    """Available heat modes for the NITRAFlame device."""
+    """Available heat modes for the Flamerite device."""
 
     OFF = 0x0B
     LOW = 0x0C
@@ -88,7 +97,7 @@ COLOR_MAX = Color.CYCLE_ORANGE_ONLY.value
 
 # Commands that can be sent to the device.
 class Command(Enum):
-    """Commands that can be sent to the NITRAFlame device."""
+    """Commands that can be sent to the Flamerite device via bluetooth."""
 
     QUERY_STATE = bytes.fromhex("a1010a")
     POWER_TOGGLE = bytes.fromhex("a10100")
