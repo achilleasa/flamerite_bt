@@ -71,39 +71,20 @@ class Device:
 
                 self._is_connected = True
 
-                self._model_number = (
-                    (
-                        await self._connection.read_gatt_char(
-                            DeviceAttribute.MODEL_NUMBER.value
-                        )
-                    )
-                    .decode("utf-8")
-                    .strip("\x00")
-                )
-                self._serial_number = (
-                    (
-                        await self._connection.read_gatt_char(
-                            DeviceAttribute.SERIAL_NUMBER.value
-                        )
-                    )
-                    .decode("utf-8")
-                    .strip("\x00")
-                )
-                self._manufacturer = (
-                    (
-                        await self._connection.read_gatt_char(
-                            DeviceAttribute.MANUFACTURER.value
-                        )
-                    )
-                    .decode("utf-8")
-                    .strip("\x00")
-                )
+                self._model_number = await self._read_attr(DeviceAttribute.MODEL_NUMBER)
+                self._serial_number = await self._read_attr(DeviceAttribute.SERIAL_NUMBER)
+                self._manufacturer = await self._read_attr(DeviceAttribute.MANUFACTURER)
+                self._fw_revision = await self._read_attr(DeviceAttribute.FW_REVISION)
+                self._hw_revision = await self._read_attr(DeviceAttribute.HW_REVISION)
+
                 _LOGGER.info(
-                    "Connected to device %s (Model: %s, Serial: %s, Manufacturer: %s)",
+                    "Connected to device %s (Model: %s, Serial: %s, Manufacturer: %s, FW rev: %s, HW rev: %s)",
                     self._mac,
                     self._model_number,
                     self._serial_number,
                     self._manufacturer,
+                    self._fw_revision,
+                    self._hw_revision,
                 )
 
                 # To interface with the device we first write a command to DEVICE_WRITE_ATTR_UUID and wait for an
@@ -144,10 +125,13 @@ class Device:
                 await asyncio.wait_for(
                     self._state_updated.wait(), timeout=DEVICE_RESPONSE_TIMEOUT_SECONDS
                 )
-                _LOGGER.debug("Updated state: %s", self._state)
             except asyncio.TimeoutError:
                 _LOGGER.error("Timeout waiting for state response from %s", self._mac)
                 pass
+
+    async def _read_attr(self, attr: DeviceAttribute) -> str:
+        """Read and decode the value of a device attribute."""
+        return (await self._connection.read_gatt_char(attr.value)).decode("utf-8").strip("\x00")
 
     async def _send_cmd(self, cmd_bytes: bytes) -> None:
         """Send a command to the device."""
@@ -179,6 +163,16 @@ class Device:
     def manufacturer(self) -> str:
         """Return the manufacturer of the connected device."""
         return self._manufacturer
+
+    @property
+    def fw_revision(self) -> str:
+        """Return the firmware revision of the connected device."""
+        return self._fw_revision
+
+    @property
+    def hw_revision(self) -> str:
+        """Return the hardware revision of the connected device."""
+        return self._hw_revision
 
     @property
     def is_powered_on(self) -> bool:
