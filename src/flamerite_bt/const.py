@@ -82,8 +82,8 @@ class HeatMode(IntEnum):
     LOW = 0x0C
     HIGH = 0x0D
 
-    def __str__(self):
-        return self.name.capitalize
+    def __str__(self) -> str:
+        return str(self.name.capitalize)
 
 
 # Valid ranges for device-reported values.

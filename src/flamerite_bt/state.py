@@ -11,6 +11,7 @@ from .const import (
     COLOR_MAX,
 )
 
+
 class State:
     """Representation of the Flamerite device state."""
 
@@ -49,7 +50,7 @@ class State:
             return False
 
         # Response payload has the following structure:
-        # [0] device state (0x0a: off; 0x0b: on - no heat, 0x0c: on - low heat, 0x0d: on - high hea)
+        # [0] device state (0x0A: off; 0x0B: on - no heat, 0x0C: on - low heat, 0x0d: on - high hea)
         # [1] unknown
         # [2] thermostat temperature offset (0 to 15); add 16 to convert to the actual thermostat value
         # [3] flame brightness (0 to 9)
