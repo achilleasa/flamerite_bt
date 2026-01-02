@@ -23,38 +23,45 @@ class Color(IntEnum):
     """Available flame and bed colors.
 
     NITRAFlame devices support 5 color palettes. Each color has 4 variations (e.g., ORANGE_0 to ORANGE_3)
-    with increasing intensity. In addition, there are 5 FLOW modes that cycle through all colors with FLOW_ORANGE_ONLY cycling
+    with increasing intensity. In addition, there are 5 CYCLE modes that cycle through all colors with CYCLE_ORANGE_ONLY cycling
     only between orange hues."""
 
-    ORANGE_0 = 0x00
-    ORANGE_1 = 0x01
-    ORANGE_2 = 0x02
-    ORANGE_3 = 0x03
-    RED_0 = 0x04
-    RED_1 = 0x05
-    RED_2 = 0x06
-    RED_3 = 0x07
-    GREEN_0 = 0x08
-    GREEN_1 = 0x09
-    GREEN_2 = 0x0A
-    GREEN_3 = 0x0B
-    BLUE_0 = 0x0C
-    BLUE_1 = 0x0D
-    BLUE_2 = 0x0E
-    BLUE_3 = 0x0F
-    WHITE_0 = 0x10
-    WHITE_1 = 0x11
-    WHITE_2 = 0x12
-    WHITE_3 = 0x13
+    ORANGE_1 = 0x00
+    ORANGE_2 = 0x01
+    ORANGE_3 = 0x02
+    ORANGE_4 = 0x03
+    RED_1 = 0x04
+    RED_2 = 0x05
+    RED_3 = 0x06
+    RED_4 = 0x07
+    GREEN_1 = 0x08
+    GREEN_2 = 0x09
+    GREEN_3 = 0x0A
+    GREEN_4 = 0x0B
+    BLUE_1 = 0x0C
+    BLUE_2 = 0x0D
+    BLUE_3 = 0x0E
+    BLUE_4 = 0x0F
+    WHITE_1 = 0x10
+    WHITE_2 = 0x11
+    WHITE_3 = 0x12
+    WHITE_4 = 0x13
 
-    FLOW_0 = 0x14
-    FLOW_1 = 0x15
-    FLOW_2 = 0x16
-    FLOW_3 = 0x17
-    FLOW_ORANGE_ONLY = 0x18
+    CYCLE_1 = 0x14
+    CYCLE_2 = 0x15
+    CYCLE_3 = 0x16
+    CYCLE_4 = 0x17
+    CYCLE_ORANGE_ONLY = 0x18
 
     def __str__(self):
-        return self.name
+        tokens = self.name.split("_")
+        if self in [Color.CYCLE_1, Color.CYCLE_1, Color.CYCLE_2, Color.CYCLE_3, Color.CYCLE_4]:
+            return f"Cycle colors (variation {tokens[1]})"
+        if self is Color.CYCLE_ORANGE_ONLY:
+            return "Cycle colors (orange hues)"
+
+        palette = tokens[0].capitalize()
+        return f"{palette} (hue {tokens[1]})"
 
 
 class HeatMode(IntEnum):
@@ -65,7 +72,7 @@ class HeatMode(IntEnum):
     HIGH = 0x0D
 
     def __str__(self):
-        return self.name
+        return self.name.capitalize
 
 
 # Valid ranges for device-reported values.
@@ -73,8 +80,8 @@ THERMOSTAT_MIN = 16
 THERMOSTAT_MAX = 31
 BRIGHTNESS_MIN = 1
 BRIGHTNESS_MAX = 10
-COLOR_MIN = Color.ORANGE_0.value
-COLOR_MAX = Color.FLOW_ORANGE_ONLY.value
+COLOR_MIN = Color.ORANGE_1.value
+COLOR_MAX = Color.CYCLE_ORANGE_ONLY.value
 
 
 # Commands that can be sent to the device.
@@ -89,12 +96,12 @@ class Command(Enum):
 
     FLAME_BRIGHTNESS_INC = bytes.fromhex("a10104")
     FLAME_BRIGHTNESS_DEC = bytes.fromhex("a10105")
-    BED_BRIGHTNESS_INC = bytes.fromhex("a10106")
-    BED_BRIGHTNESS_DEC = bytes.fromhex("a10107")
+    FUEL_BRIGHTNESS_INC = bytes.fromhex("a10106")
+    FUEL_BRIGHTNESS_DEC = bytes.fromhex("a10107")
 
     # Set Color commands ('c201' + color) and ('c101' + color)
     SET_FLAME_COLOR = bytes.fromhex("c101")
-    SET_BED_COLOR = bytes.fromhex("c201")
+    SET_FUEL_COLOR = bytes.fromhex("c201")
 
     # Thermostat control command ('a201' + temp) where temp is in the [16, 31] range.
     SET_THERMOSTAT = bytes.fromhex("a201")
