@@ -4,6 +4,7 @@ import asyncio
 import logging
 
 from bleak.backends.device import BLEDevice
+from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.exc import BleakError
 from bleak_retry_connector import (
     BleakClient,  # type: ignore
@@ -34,6 +35,7 @@ class Device:
     _model_number: str
     _srial_number: str
     _manufacturer: str
+    _name: str
 
     _state_lock = asyncio.Lock()
     _state: State
@@ -43,6 +45,7 @@ class Device:
         self._ble_device = ble_device
         self._is_connected = False
         self._mac = ble_device.address
+        self._name = ble_device.name or ""
         self._state = State()
 
     @staticmethod
@@ -97,7 +100,7 @@ class Device:
 
                 # To interface with the device we first write a command to DEVICE_WRITE_ATTR_UUID and wait for an
                 # asynchronous notification to be received on DEVICE_READ_ATTR_UUID.
-                def on_notify(sender: int, data: bytearray):
+                def on_notify(char: BleakGATTCharacteristic, data: bytearray):
                     """Notification handler which updates the device state."""
                     if self._state.update_from_bytes(data):
                         self._state_updated.set()
@@ -155,6 +158,11 @@ class Device:
     def is_connected(self) -> bool:
         """Return true if the device is connected."""
         return self._is_connected
+
+    @property
+    def name(self) -> str:
+        """Return the advertised name of the connected device."""
+        return self._name
 
     @property
     def mac(self) -> str:
