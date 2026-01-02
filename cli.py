@@ -20,7 +20,9 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def main():
-    ble_devices = await scan_for_nitraflame_devices(max_devices=1,scan_timeout_seconds=40)
+    ble_devices = await scan_for_nitraflame_devices(
+        max_devices=1, scan_timeout_seconds=40
+    )
     if len(ble_devices) == 0:
         _LOGGER.warning("No devices found")
         return
@@ -33,17 +35,17 @@ async def main():
 
         # Take user input
         line = await aioconsole.ainput(
-            "Commands:\n" +
-            "fc=<value> -> set flame color\n" +
-            "bc=<value> -> set bed color\n" +
-            "fb=<value> -> set flame brightness\n" +
-            "bb=<value> -> set bed brightness\n" +
-            "t=<value>  -> set thermostat temperature\n" + 
-            "hm=<value> -> set heat mode (OFF, LOW, HIGH)\n" +
-            "on         -> turn on\n" +
-            "off        -> turn off\n" +
-            "cmd=<value>-> run command\n" +
-            "\nOr 'exit' to disconnect:\n"
+            "Commands:\n"
+            + "fc=<value> -> set flame color\n"
+            + "bc=<value> -> set bed/fuel color\n"
+            + "fb=<value> -> set flame brightness\n"
+            + "bb=<value> -> set bed/fuel brightness\n"
+            + "t=<value>  -> set thermostat temperature\n"
+            + "hm=<value> -> set heat mode (OFF, LOW, HIGH)\n"
+            + "on         -> turn on\n"
+            + "off        -> turn off\n"
+            + "cmd=<value>-> run command\n"
+            + "\nOr 'exit' to disconnect:\n"
         )
 
         if line == "exit":
@@ -53,16 +55,16 @@ async def main():
             color_name = line.split("=")[1]
             match = [c for c in list(Color) if c.name == color_name]
             if len(match) != 1:
-                _LOGGER.warn(f"Invalid color name: {color_name}")
+                _LOGGER.warning(f"Invalid color name: {color_name}")
                 continue
             await device.set_flame_color(match[0])
         elif line.startswith("bc="):
             color_name = line.split("=")[1]
             match = [c for c in list(Color) if c.name == color_name]
             if len(match) != 1:
-                _LOGGER.warn(f"Invalid color name: {color_name}")
+                _LOGGER.warning(f"Invalid color name: {color_name}")
                 continue
-            await device.set_bed_color(match[0])
+            await device.set_fuel_color(match[0])
         elif line == "on":
             await device.set_powered_on(True)
         elif line == "off":
@@ -75,12 +77,12 @@ async def main():
             await device.set_flame_brightness(brightness)
         elif line.startswith("bb="):
             brightness = int(line.split("=")[1])
-            await device.set_bed_brightness(brightness)
+            await device.set_fuel_brightness(brightness)
         elif line.startswith("hm="):
             mode = line.split("=")[1]
             match = [hm for hm in list(HeatMode) if hm.name == mode]
             if len(match) != 1:
-                _LOGGER.warn(f"Invalid heat mode: {mode}")
+                _LOGGER.warning(f"Invalid heat mode: {mode}")
                 continue
             await device.set_heat_mode(match[0])
         elif line.startswith("cmd="):

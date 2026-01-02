@@ -21,7 +21,7 @@ lock = asyncio.Lock()
 def _is_nitraflame_device(
     ble_device: BLEDevice,
     ble_advertisement_data: AdvertisementData,
-)-> bool:
+) -> bool:
     return DEVICE_NAME in (ble_advertisement_data.local_name or "")
 
 
@@ -35,6 +35,7 @@ async def scan_for_nitraflame_devices(
     _LOGGER.debug("Scanning for NITRAFlame devices")
 
     scan_done = asyncio.Event()
+
     def _detection_callback(
         ble_device: BLEDevice,
         ble_advertisement_data: AdvertisementData,
@@ -53,13 +54,13 @@ async def scan_for_nitraflame_devices(
         if max_devices != -1 and len(device_list) == max_devices:
             scan_done.set()
 
-    # Scan for compatible devices up to scan_timeout_seconds seconds or until the required number of devices is found. 
+    # Scan for compatible devices up to scan_timeout_seconds seconds or until the required number of devices is found.
     async with BleakScanner(_detection_callback) as scanner:
         try:
             await asyncio.wait_for(scan_done.wait(), timeout=scan_timeout_seconds)
         except asyncio.TimeoutError:
             # Timeout elapsed; proceed with whatever devices were found.
             pass
-    
+
     _LOGGER.debug("Scan complete, found %d NITRAFlame devices", len(device_list))
     return device_list
