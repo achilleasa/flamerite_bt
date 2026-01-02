@@ -37,9 +37,9 @@ async def main():
         line = await aioconsole.ainput(
             "Commands:\n"
             + "fc=<value> -> set flame color\n"
-            + "bc=<value> -> set bed color\n"
+            + "bc=<value> -> set bed/fuel color\n"
             + "fb=<value> -> set flame brightness\n"
-            + "bb=<value> -> set bed brightness\n"
+            + "bb=<value> -> set bed/fuel brightness\n"
             + "t=<value>  -> set thermostat temperature\n"
             + "hm=<value> -> set heat mode (OFF, LOW, HIGH)\n"
             + "on         -> turn on\n"
@@ -55,16 +55,16 @@ async def main():
             color_name = line.split("=")[1]
             match = [c for c in list(Color) if c.name == color_name]
             if len(match) != 1:
-                _LOGGER.warn(f"Invalid color name: {color_name}")
+                _LOGGER.warning(f"Invalid color name: {color_name}")
                 continue
             await device.set_flame_color(match[0])
         elif line.startswith("bc="):
             color_name = line.split("=")[1]
             match = [c for c in list(Color) if c.name == color_name]
             if len(match) != 1:
-                _LOGGER.warn(f"Invalid color name: {color_name}")
+                _LOGGER.warning(f"Invalid color name: {color_name}")
                 continue
-            await device.set_bed_color(match[0])
+            await device.set_fuel_color(match[0])
         elif line == "on":
             await device.set_powered_on(True)
         elif line == "off":
@@ -77,12 +77,12 @@ async def main():
             await device.set_flame_brightness(brightness)
         elif line.startswith("bb="):
             brightness = int(line.split("=")[1])
-            await device.set_bed_brightness(brightness)
+            await device.set_fuel_brightness(brightness)
         elif line.startswith("hm="):
             mode = line.split("=")[1]
             match = [hm for hm in list(HeatMode) if hm.name == mode]
             if len(match) != 1:
-                _LOGGER.warn(f"Invalid heat mode: {mode}")
+                _LOGGER.warning(f"Invalid heat mode: {mode}")
                 continue
             await device.set_heat_mode(match[0])
         elif line.startswith("cmd="):

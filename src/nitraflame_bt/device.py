@@ -278,19 +278,19 @@ class Device:
             )
 
     @property
-    def bed_color(self) -> Color:
-        """Return the current bed color."""
-        return self._state.bed_color
+    def fuel_color(self) -> Color:
+        """Return the current fuel color."""
+        return self._state.fuel_color
 
-    async def set_bed_color(self, color: Color) -> None:
-        """Set the bed color."""
+    async def set_fuel_color(self, color: Color) -> None:
+        """Set the fuel color."""
         if not self._is_connected:
             await self.connect(retry_attempts=1)
 
         async with self._state_lock:
-            self._state.bed_color = color
+            self._state.fuel_color = color
             await self._send_cmd(
-                Command.SET_BED_COLOR.value + bytes([self._state.bed_color.value])
+                Command.SET_FUEL_COLOR.value + bytes([self._state.fuel_color.value])
             )
 
     @property
@@ -320,27 +320,27 @@ class Device:
                 old_value += 1
 
     @property
-    def bed_brightness(self) -> int:
-        """Return the current bed brightness level."""
-        return self._state.bed_brightness
+    def fuel_brightness(self) -> int:
+        """Return the current fuel brightness level."""
+        return self._state.fuel_brightness
 
-    async def set_bed_brightness(self, brightness: int) -> None:
-        """Set the bed brightness level."""
+    async def set_fuel_brightness(self, brightness: int) -> None:
+        """Set the fuel brightness level."""
         if not self._is_connected:
             await self.connect(retry_attempts=1)
 
         async with self._state_lock:
-            old_value = self._state.bed_brightness
-            self._state.set_bed_brightness(brightness)
+            old_value = self._state.fuel_brightness
+            self._state.set_fuel_brightness(brightness)
 
             # Only send commands if the brightness level has changed.
             if old_value == brightness:
                 return
 
-            while self._state.bed_brightness < old_value:
-                await self._send_cmd(Command.BED_BRIGHTNESS_DEC.value)
+            while self._state.fuel_brightness < old_value:
+                await self._send_cmd(Command.FUEL_BRIGHTNESS_DEC.value)
                 old_value -= 1
 
-            while self._state.bed_brightness > old_value:
-                await self._send_cmd(Command.BED_BRIGHTNESS_INC.value)
+            while self._state.fuel_brightness > old_value:
+                await self._send_cmd(Command.FUEL_BRIGHTNESS_INC.value)
                 old_value += 1
