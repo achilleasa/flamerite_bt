@@ -1,17 +1,13 @@
-"""Debug CLI for interfacing with NITRAFlame Fireplace devices over Bluetooth."""
+"""Debug CLI for interfacing with Flamerite Fireplace devices over Bluetooth."""
 
 import asyncio
 import logging
 import sys
-from typing import List
-
 import aioconsole
-from bleak.backends.device import BLEDevice
 
-from nitraflame_bt.device import Device
-from nitraflame_bt.scanner import scan_for_nitraflame_devices
-
-from nitraflame_bt.const import Color, HeatMode
+from flamerite_bt.const import Color, HeatMode
+from flamerite_bt.device import Device
+from flamerite_bt.scanner import scan_for_flamerite_devices
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("bleak").setLevel(logging.WARNING)
@@ -20,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def main():
-    ble_devices = await scan_for_nitraflame_devices(
+    ble_devices = await scan_for_flamerite_devices(
         max_devices=1, scan_timeout_seconds=40
     )
     if len(ble_devices) == 0:

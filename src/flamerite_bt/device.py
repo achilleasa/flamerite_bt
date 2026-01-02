@@ -1,4 +1,4 @@
-"""Device wrapper for the NITRAFlame Fireplace device."""
+"""Device wrapper for the Flamerite Fireplace device."""
 
 import asyncio
 import logging
@@ -13,6 +13,7 @@ from bleak_retry_connector import (
 from .state import State
 from .const import (
     DEVICE_RESPONSE_TIMEOUT_SECONDS,
+    SUPPORTED_DEVICE_NAMES,
     Command,
     Color,
     HeatMode,
@@ -23,7 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Device:
-    """A wrapper class to interact with NITRAFLame Bluetooth devices."""
+    """A wrapper class to interact with Flamerite Bluetooth devices."""
 
     _ble_device: BLEDevice
     _connection: BleakClient
@@ -43,6 +44,11 @@ class Device:
         self._is_connected = False
         self._mac = ble_device.address
         self._state = State()
+
+    @staticmethod
+    def is_supported_device(device_name: str) -> bool:
+        """Returns True if the device class supports the provided device."""
+        return device_name in SUPPORTED_DEVICE_NAMES
 
     def disconnected_callback(self, client):  # pylint: disable=unused-argument
         """Handle disconnection events."""
@@ -72,7 +78,9 @@ class Device:
                 self._is_connected = True
 
                 self._model_number = await self._read_attr(DeviceAttribute.MODEL_NUMBER)
-                self._serial_number = await self._read_attr(DeviceAttribute.SERIAL_NUMBER)
+                self._serial_number = await self._read_attr(
+                    DeviceAttribute.SERIAL_NUMBER
+                )
                 self._manufacturer = await self._read_attr(DeviceAttribute.MANUFACTURER)
                 self._fw_revision = await self._read_attr(DeviceAttribute.FW_REVISION)
                 self._hw_revision = await self._read_attr(DeviceAttribute.HW_REVISION)
@@ -131,7 +139,11 @@ class Device:
 
     async def _read_attr(self, attr: DeviceAttribute) -> str:
         """Read and decode the value of a device attribute."""
-        return (await self._connection.read_gatt_char(attr.value)).decode("utf-8").strip("\x00")
+        return (
+            (await self._connection.read_gatt_char(attr.value))
+            .decode("utf-8")
+            .strip("\x00")
+        )
 
     async def _send_cmd(self, cmd_bytes: bytes) -> None:
         """Send a command to the device."""

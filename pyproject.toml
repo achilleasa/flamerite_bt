@@ -1,7 +1,7 @@
 [project]
-name = "nitraflame_bt"
+name = "flamerite_bt"
 version = "0.1.0"
-description = "Control NITRAFlame fireplace devices over bluetooth"
+description = "Control Flamerite fireplace devices over bluetooth"
 authors = [
     {name = "Achilleas Anagnostopoulos",email = "achilleas.imap.mbox@gmail.com"}
 ]
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{include = "nitraflame_bt", from = "src"}]
+packages = [{include = "flamerite_bt", from = "src"}]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
