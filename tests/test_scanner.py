@@ -1,12 +1,12 @@
+import asyncio
 import unittest
 from unittest import mock
-import asyncio
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from flamerite_bt.scanner import scan_for_flamerite_devices
 from flamerite_bt.const import SUPPORTED_DEVICE_SVC_UUIDS
+from flamerite_bt.scanner import scan_for_flamerite_devices
 
 
 class FakeBleakScanner:
@@ -91,7 +91,8 @@ class TestScanner(unittest.TestCase):
                 while FakeBleakScanner.last_instance is None:
                     await asyncio.sleep(0)
 
-                # Two discovery events for the same MAC address should only result in one entry.
+                # Two discovery events for the same MAC address should only
+                # result in one entry.
                 d1 = BLEDevice(
                     address="00:11:22:33:44:55", name="NITRAFlame", details={}
                 )

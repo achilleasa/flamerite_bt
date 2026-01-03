@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import sys
+
 import aioconsole
 
 from flamerite_bt.const import Color, HeatMode

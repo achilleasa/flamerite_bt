@@ -1,14 +1,14 @@
 """Flamerite state parsing logic."""
 
 from .const import (
-    HeatMode,
-    Color,
-    THERMOSTAT_MIN,
-    THERMOSTAT_MAX,
-    BRIGHTNESS_MIN,
     BRIGHTNESS_MAX,
-    COLOR_MIN,
+    BRIGHTNESS_MIN,
     COLOR_MAX,
+    COLOR_MIN,
+    THERMOSTAT_MAX,
+    THERMOSTAT_MIN,
+    Color,
+    HeatMode,
 )
 
 
@@ -33,7 +33,8 @@ class State:
         self.fuel_brightness = BRIGHTNESS_MIN
 
     def update_from_bytes(self, data: bytearray) -> bool:
-        """Update state from raw byte data read from the device. Returns True if the update was successful."""
+        """Update state from raw byte data read from the device.
+        Returns True if the update was successful."""
 
         # All async responses have the following structure:
         # --------------
@@ -43,16 +44,19 @@ class State:
         if len(data) < 2 or data[0] != 0x20:
             return False
 
-        # We only care about QUERY_STATE responses (cmd: a1010a) which always contain exactly 7 bytes.
+        # We only care about QUERY_STATE responses (cmd: a1010a) which always contain
+        # exactly 7 bytes.
         exp_res_payload_len = 7
         state_payload = data[2:]
         if len(state_payload) != exp_res_payload_len:
             return False
 
         # Response payload has the following structure:
-        # [0] device state (0x0A: off; 0x0B: on - no heat, 0x0C: on - low heat, 0x0d: on - high hea)
+        # [0] device state (0x0A: off; 0x0B: on - no heat,
+        #     0x0C: ON - low heat, 0x0d: ON - high heat)
         # [1] unknown
-        # [2] thermostat temperature offset (0 to 15); add 16 to convert to the actual thermostat value
+        # [2] thermostat temperature offset (0 to 15); add 16 to convert to the
+        #     actual thermostat value
         # [3] flame brightness (0 to 9)
         # [4] fuel brightness (0 to 9)
         # [5] flame color

@@ -1,24 +1,22 @@
-import unittest
-from unittest.mock import AsyncMock, Mock, patch, call
 import asyncio
+import unittest
+from unittest.mock import AsyncMock, Mock, call, patch
 
 from attr import dataclass
-
-from flamerite_bt.device import Device
-from flamerite_bt.const import (
-    DeviceAttribute,
-    HeatMode,
-    Color,
-    Command,
-    THERMOSTAT_MIN,
-    THERMOSTAT_MAX,
-)
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
-from bleak_retry_connector import (
-    BleakClient,  # type: ignore
-    establish_connection,
+from bleak_retry_connector import BleakClient  # type: ignore
+from bleak_retry_connector import establish_connection
+
+from flamerite_bt.const import (
+    THERMOSTAT_MAX,
+    THERMOSTAT_MIN,
+    Color,
+    Command,
+    DeviceAttribute,
+    HeatMode,
 )
+from flamerite_bt.device import Device
 
 
 class TestDevice(unittest.TestCase):
@@ -56,7 +54,8 @@ class TestDevice(unittest.TestCase):
         with patch("flamerite_bt.device.establish_connection", new=connect_stub):
 
             async def run_query_state():
-                # Calling query state without an active connection should automatically trigger a connection.
+                # Calling query state without an active connection should automatically
+                # trigger a connection.
                 query_state_complete = device.query_state()
 
                 # Simulate a notification being received after a short delay.
@@ -87,7 +86,10 @@ class TestDevice(unittest.TestCase):
 
         specs = [
             Spec(
-                descr="Send no commands when the requested power state is the same as the current state",
+                descr=(
+                    "Send no commands when the requested power state is the same as "
+                    "the current state"
+                ),
                 is_powered_on=True,
                 new_powered_on=True,
                 exp_commands=[],
@@ -153,7 +155,10 @@ class TestDevice(unittest.TestCase):
                 exp_commands=[],
             ),
             Spec(
-                descr="Send no commands when the requested mode is the same as the current mode",
+                descr=(
+                    "Send no commands when the requested mode is the same as "
+                    "the current mode"
+                ),
                 is_powered_on=True,
                 cur_heat_mode=HeatMode.LOW,
                 new_heat_mode=HeatMode.LOW,
@@ -208,7 +213,8 @@ class TestDevice(unittest.TestCase):
                 cur_heat_mode=HeatMode.HIGH,
                 new_heat_mode=HeatMode.OFF,
                 exp_heat_mode=HeatMode.OFF,
-                # Sending HIGH when in HIGH switches to LOW; then send another LOW to turn off.
+                # Sending HIGH when in HIGH switches to LOW;
+                # then send another LOW to turn off.
                 exp_commands=[Command.SET_HEAT_HIGH.value, Command.SET_HEAT_LOW.value],
             ),
         ]
@@ -318,7 +324,10 @@ class TestDevice(unittest.TestCase):
 
         specs = [
             Spec(
-                descr="Send no commands when the requested brightness is the same as the current brightness",
+                descr=(
+                    "Send no commands when the requested brightness is the "
+                    "same as the current brightness"
+                ),
                 cur_brightness=5,
                 new_brightness=5,
                 exp_commands=[],
@@ -405,7 +414,10 @@ class TestDevice(unittest.TestCase):
 
         specs = [
             Spec(
-                descr="Send no commands when the requested brightness is the same as the current brightness",
+                descr=(
+                    "Send no commands when the requested brightness is the same "
+                    "as the current brightness"
+                ),
                 cur_brightness=5,
                 new_brightness=5,
                 exp_commands=[],
@@ -492,7 +504,10 @@ class TestDevice(unittest.TestCase):
 
         specs = [
             Spec(
-                descr="Send no commands when the requested value is the same as the current value",
+                descr=(
+                    "Send no commands when the requested value is the same "
+                    "as the current value"
+                ),
                 cur_value=THERMOSTAT_MIN,
                 new_value=THERMOSTAT_MIN,
                 exp_commands=[],

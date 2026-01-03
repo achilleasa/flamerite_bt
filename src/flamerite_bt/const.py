@@ -28,9 +28,10 @@ class DeviceAttribute(Enum):
 class Color(IntEnum):
     """Available flame and bed colors.
 
-    The devices support 5 color palettes. Each color has 4 variations (e.g., ORANGE_1 to ORANGE_4)
-    with increasing intensity. In addition, there are 5 CYCLE modes that cycle through all colors with CYCLE_ORANGE_ONLY cycling
-    only between orange hues."""
+    The devices support 5 color palettes. Each color has 4 variations
+    (e.g., ORANGE_1 to ORANGE_4) with increasing intensity. In addition,
+    there are 5 CYCLE modes that cycle through all colors with
+    CYCLE_ORANGE_ONLY cycling only between orange hues."""
 
     ORANGE_1 = 0x00
     ORANGE_2 = 0x01

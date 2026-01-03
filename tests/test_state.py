@@ -1,13 +1,8 @@
-from dataclasses import dataclass
 import unittest
+from dataclasses import dataclass
 
+from flamerite_bt.const import BRIGHTNESS_MIN, THERMOSTAT_MIN, Color, HeatMode
 from flamerite_bt.state import State
-from flamerite_bt.const import (
-    HeatMode,
-    Color,
-    THERMOSTAT_MIN,
-    BRIGHTNESS_MIN,
-)
 
 
 class TestState(unittest.TestCase):
@@ -43,7 +38,11 @@ class TestState(unittest.TestCase):
 
         specs = [
             Spec(
-                descr="Power OFF, No Heat, Thermostat 16, Flame Brightness 1, Fuel Brightness 10, Cycle Variation 1 for Flame Color, Cycle variation 5 for Fuel Color",
+                descr=(
+                    "Power OFF, No Heat, Thermostat 16, Flame Brightness 1, "
+                    "Fuel Brightness 10, Cycle Variation 1 for Flame Color, "
+                    "Cycle variation 5 for Fuel Color"
+                ),
                 data=bytearray([0x20, 0x07, 0x0A, 0xA1, 0x00, 0x00, 0x09, 0x14, 0x18]),
                 expected=ExpectedState(
                     is_powered_on=False,
@@ -56,7 +55,11 @@ class TestState(unittest.TestCase):
                 ),
             ),
             Spec(
-                descr="Power ON, No Heat, Thermostat 16, Flame Brightness 1, Fuel Brightness 10, Cycle Variation 1 for Flame Color, Cycle variation 5 for Fuel Color",
+                descr=(
+                    "Power ON, No Heat, Thermostat 16, Flame Brightness 1,"
+                    "Fuel Brightness 10, Cycle Variation 1 for Flame Color, "
+                    "Cycle variation 5 for Fuel Color"
+                ),
                 data=bytearray([0x20, 0x07, 0x0B, 0xA1, 0x00, 0x00, 0x09, 0x14, 0x18]),
                 expected=ExpectedState(
                     is_powered_on=True,
@@ -69,7 +72,10 @@ class TestState(unittest.TestCase):
                 ),
             ),
             Spec(
-                descr="Power ON, Low Heat, Thermostat 22, Flame Brightness 6, Fuel Brightness 4, Flame Color 2, Fuel Color 1",
+                descr=(
+                    "Power ON, Low Heat, Thermostat 22, Flame Brightness 6, "
+                    "Fuel Brightness 4, Flame Color 2, Fuel Color 1"
+                ),
                 data=bytearray([0x20, 0x07, 0x0C, 0xA1, 0x06, 0x05, 0x03, 0x02, 0x01]),
                 expected=ExpectedState(
                     is_powered_on=True,
@@ -82,7 +88,10 @@ class TestState(unittest.TestCase):
                 ),
             ),
             Spec(
-                descr="Power ON, High Heat, Thermostat 22, Flame Brightness 6, Fuel Brightness 4, Flame Color 2, Fuel Color 1",
+                descr=(
+                    "Power ON, High Heat, Thermostat 22, Flame Brightness 6, "
+                    "Fuel Brightness 4, Flame Color 2, Fuel Color 1"
+                ),
                 data=bytearray([0x20, 0x07, 0x0D, 0xA1, 0x06, 0x05, 0x03, 0x02, 0x01]),
                 expected=ExpectedState(
                     is_powered_on=True,

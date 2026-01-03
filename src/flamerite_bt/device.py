@@ -2,26 +2,25 @@
 
 import asyncio
 import logging
+from collections.abc import Awaitable
 
-from bleak.backends.device import BLEDevice
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 from bleak.exc import BleakError
-from bleak_retry_connector import (
-    BleakClient,  # type: ignore
-    establish_connection,
-)
+from bleak_retry_connector import BleakClient  # type: ignore
+from bleak_retry_connector import establish_connection
 
-from .state import State
 from .const import (
     DEVICE_RESPONSE_TIMEOUT_SECONDS,
     SUPPORTED_DEVICE_NAMES,
     SUPPORTED_DEVICE_SVC_UUIDS,
-    Command,
     Color,
-    HeatMode,
+    Command,
     DeviceAttribute,
+    HeatMode,
 )
+from .state import State
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,7 +51,8 @@ class Device:
 
     @staticmethod
     def is_supported_device(advertisment_data: AdvertisementData) -> bool:
-        """Returns True if the device class supports the device identified by advertisement data."""
+        """Returns True if the device class supports the device identified by
+        advertisement data."""
         device_name = advertisment_data.local_name or ""
         if device_name not in SUPPORTED_DEVICE_NAMES:
             return False
@@ -97,7 +97,10 @@ class Device:
                 self._hw_revision = await self._read_attr(DeviceAttribute.HW_REVISION)
 
                 _LOGGER.info(
-                    "Connected to device %s (Model: %s, Serial: %s, Manufacturer: %s, FW rev: %s, HW rev: %s)",
+                    (
+                        "Connected to device %s (Model: %s, Serial: %s, "
+                        "Manufacturer: %s, FW rev: %s, HW rev: %s"
+                    ),
                     self._mac,
                     self._model_number,
                     self._serial_number,
@@ -106,7 +109,7 @@ class Device:
                     self._hw_revision,
                 )
 
-                # To interface with the device we first write a command to DEVICE_WRITE_ATTR_UUID and wait for an
+                # To interface with the device we first write a command and wait for an
                 # asynchronous notification to be received on DEVICE_READ_ATTR_UUID.
                 await self._connection.start_notify(
                     DeviceAttribute.CMD_RESPONSE.value, self._on_notify
@@ -227,6 +230,43 @@ class Device:
         """Return the current heat mode."""
         return self._state.heat_mode
 
+    def _change_heatmode_cmds(
+        self, old_mode: HeatMode, new_mode: HeatMode
+    ) -> list[Awaitable[None]]:
+        """Construct the appropriate commands to transition between heat modes."""
+        # Heat selection works in sequential steps as follows:
+        # To go from off to low -> send SET_HEAT_LOW cmd (step up)
+        # To go from low -> off -> send SET_HEAT_LOW cmd (step down)
+        # To go from low -> high -> send SET_HEAT_HIGH cmd (step up)
+        # To go from high -> low -> send SET_HEAT_HIGH cmd (step down)
+        cmds: list[Awaitable[None]] = list()
+        if old_mode == HeatMode.OFF:
+            if new_mode == HeatMode.LOW:
+                cmds.extend([self._send_cmd(Command.SET_HEAT_LOW.value)])
+            elif new_mode == HeatMode.HIGH:
+                cmds.extend(
+                    [
+                        self._send_cmd(Command.SET_HEAT_LOW.value),
+                        self._send_cmd(Command.SET_HEAT_HIGH.value),
+                    ]
+                )
+        elif old_mode == HeatMode.LOW:
+            if new_mode == HeatMode.OFF:
+                cmds.extend([self._send_cmd(Command.SET_HEAT_LOW.value)])
+            elif new_mode == HeatMode.HIGH:
+                cmds.extend([self._send_cmd(Command.SET_HEAT_HIGH.value)])
+        elif old_mode == HeatMode.HIGH:
+            if new_mode == HeatMode.LOW:
+                cmds.extend([self._send_cmd(Command.SET_HEAT_HIGH.value)])
+            elif new_mode == HeatMode.OFF:
+                cmds.extend(
+                    [
+                        self._send_cmd(Command.SET_HEAT_HIGH.value),
+                        self._send_cmd(Command.SET_HEAT_LOW.value),
+                    ]
+                )
+        return cmds
+
     async def set_heat_mode(self, mode: HeatMode) -> None:
         """Set the heat mode."""
         if not self._is_connected:
@@ -245,28 +285,8 @@ class Device:
             if old_value == mode:
                 return
 
-            # Heat selection works in sequential steps as follows:
-            # To go from off to low -> send SET_HEAT_LOW cmd (step up)
-            # To go from low -> off -> send SET_HEAT_LOW cmd (step down)
-            # To go from low -> high -> send SET_HEAT_HIGH cmd (step up)
-            # To go from high -> low -> send SET_HEAT_HIGH cmd (step down)
-            if old_value == HeatMode.OFF:
-                if mode == HeatMode.LOW:
-                    await self._send_cmd(Command.SET_HEAT_LOW.value)
-                elif mode == HeatMode.HIGH:
-                    await self._send_cmd(Command.SET_HEAT_LOW.value)
-                    await self._send_cmd(Command.SET_HEAT_HIGH.value)
-            elif old_value == HeatMode.LOW:
-                if mode == HeatMode.OFF:
-                    await self._send_cmd(Command.SET_HEAT_LOW.value)
-                elif mode == HeatMode.HIGH:
-                    await self._send_cmd(Command.SET_HEAT_HIGH.value)
-            elif old_value == HeatMode.HIGH:
-                if mode == HeatMode.LOW:
-                    await self._send_cmd(Command.SET_HEAT_HIGH.value)
-                elif mode == HeatMode.OFF:
-                    await self._send_cmd(Command.SET_HEAT_HIGH.value)
-                    await self._send_cmd(Command.SET_HEAT_LOW.value)
+            for cmd in self._change_heatmode_cmds(old_value, mode):
+                await cmd
 
     @property
     def thermostat(self) -> int:

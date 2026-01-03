@@ -1,4 +1,4 @@
-"""Simple scanner for locating Flamerite devices based on the advertised manufacturer name."""
+"""Simple scanner for locating Flamerite devices."""
 
 import asyncio
 import logging
@@ -44,7 +44,8 @@ async def scan_for_flamerite_devices(
         if max_devices != -1 and len(device_list) == max_devices:
             scan_done.set()
 
-    # Scan for compatible devices up to scan_timeout_seconds seconds or until the required number of devices is found.
+    # Scan for compatible devices up to scan_timeout_seconds seconds or until the
+    # required number of devices is found.
     async with BleakScanner(_detection_callback):
         try:
             await asyncio.wait_for(scan_done.wait(), timeout=scan_timeout_seconds)
