@@ -5,6 +5,7 @@ import logging
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.backends.scanner import AdvertisementData
 from bleak.exc import BleakError
 from bleak_retry_connector import (
     BleakClient,  # type: ignore
@@ -15,6 +16,7 @@ from .state import State
 from .const import (
     DEVICE_RESPONSE_TIMEOUT_SECONDS,
     SUPPORTED_DEVICE_NAMES,
+    SUPPORTED_DEVICE_SVC_UUIDS,
     Command,
     Color,
     HeatMode,
@@ -49,9 +51,15 @@ class Device:
         self._state = State()
 
     @staticmethod
-    def is_supported_device(device_name: str) -> bool:
-        """Returns True if the device class supports the provided device."""
-        return device_name in SUPPORTED_DEVICE_NAMES
+    def is_supported_device(advertisment_data: AdvertisementData) -> bool:
+        """Returns True if the device class supports the device identified by advertisement data."""
+        device_name = advertisment_data.local_name or ""
+        if device_name not in SUPPORTED_DEVICE_NAMES:
+            return False
+        for svc_uuid in SUPPORTED_DEVICE_SVC_UUIDS:
+            if svc_uuid in advertisment_data.service_uuids:
+                return True
+        return False
 
     def disconnected_callback(self, client):  # pylint: disable=unused-argument
         """Handle disconnection events."""

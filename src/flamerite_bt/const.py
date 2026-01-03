@@ -6,6 +6,7 @@ from enum import Enum, IntEnum
 DEVICE_RESPONSE_TIMEOUT_SECONDS = 5
 
 SUPPORTED_DEVICE_NAMES = ["NITRAFlame"]
+SUPPORTED_DEVICE_SVC_UUIDS = ["0000fff0-0000-1000-8000-00805f9b34fb"]
 
 
 class DeviceAttribute(Enum):

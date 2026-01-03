@@ -30,8 +30,7 @@ async def scan_for_flamerite_devices(
         ble_device: BLEDevice,
         ble_advertisement_data: AdvertisementData,
     ) -> None:
-        name = ble_advertisement_data.local_name or ""
-        if not Device.is_supported_device(name):
+        if not Device.is_supported_device(ble_advertisement_data):
             return
 
         already_seen = [d for d in device_list if d.address == ble_device.address]
