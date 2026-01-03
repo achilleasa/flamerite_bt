@@ -19,9 +19,9 @@ class DeviceAttribute(Enum):
     MANUFACTURER = "00002a29-0000-1000-8000-00805f9b34fb"
 
     # Readable via subscribing to a notification callback.
-    CMD_REQ_ATTR = "0000fff2-0000-1000-8000-00805f9b34fb"
+    CMD_RESPONSE = "0000fff1-0000-1000-8000-00805f9b34fb"
     # Writeable
-    CMD_RES_ATTR = "0000fff1-0000-1000-8000-00805f9b34fb"
+    CMD_REQUEST = "0000fff2-0000-1000-8000-00805f9b34fb"
 
 
 class Color(IntEnum):

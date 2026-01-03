@@ -56,8 +56,8 @@ class Device:
     def disconnected_callback(self, client):  # pylint: disable=unused-argument
         """Handle disconnection events."""
 
-        _LOGGER.warning("Disconnected from %s", self._mac)
         self._is_connected = False
+        _LOGGER.warning("Disconnected from %s", self._mac)
 
     async def connect(self, retry_attempts=4) -> None:
         """Connect to the device."""
@@ -100,13 +100,8 @@ class Device:
 
                 # To interface with the device we first write a command to DEVICE_WRITE_ATTR_UUID and wait for an
                 # asynchronous notification to be received on DEVICE_READ_ATTR_UUID.
-                def on_notify(char: BleakGATTCharacteristic, data: bytearray):
-                    """Notification handler which updates the device state."""
-                    if self._state.update_from_bytes(data):
-                        self._state_updated.set()
-
                 await self._connection.start_notify(
-                    DeviceAttribute.CMD_RES_ATTR.value, on_notify
+                    DeviceAttribute.CMD_RESPONSE.value, self._on_notify
                 )
             except BleakError as ex:
                 _LOGGER.error("Failed to connect to %s: %s", self._mac, ex)
@@ -118,6 +113,7 @@ class Device:
             return
 
         await self._connection.disconnect()
+        self._is_connected = False
         _LOGGER.debug("Disconnected from %s", self._mac)
 
     def update_ble_device(self, ble_device: BLEDevice) -> None:
@@ -140,6 +136,11 @@ class Device:
                 _LOGGER.error("Timeout waiting for state response from %s", self._mac)
                 pass
 
+    def _on_notify(self, char: BleakGATTCharacteristic, data: bytearray) -> None:
+        """Notification handler which updates the device state."""
+        if self._state.update_from_bytes(data):
+            self._state_updated.set()
+
     async def _read_attr(self, attr: DeviceAttribute) -> str:
         """Read and decode the value of a device attribute."""
         return (
@@ -151,7 +152,7 @@ class Device:
     async def _send_cmd(self, cmd_bytes: bytes) -> None:
         """Send a command to the device."""
         await self._connection.write_gatt_char(
-            DeviceAttribute.CMD_REQ_ATTR.value, cmd_bytes, response=True
+            DeviceAttribute.CMD_REQUEST.value, cmd_bytes, response=True
         )
 
     @property
@@ -240,7 +241,7 @@ class Device:
             # To go from off to low -> send SET_HEAT_LOW cmd (step up)
             # To go from low -> off -> send SET_HEAT_LOW cmd (step down)
             # To go from low -> high -> send SET_HEAT_HIGH cmd (step up)
-            # To go from high -> low -> send SET_HEAT_LOW cmd (step down)
+            # To go from high -> low -> send SET_HEAT_HIGH cmd (step down)
             if old_value == HeatMode.OFF:
                 if mode == HeatMode.LOW:
                     await self._send_cmd(Command.SET_HEAT_LOW.value)
@@ -270,7 +271,13 @@ class Device:
             await self.connect(retry_attempts=1)
 
         async with self._state_lock:
+            old_value = self._state.thermostat
             self._state.set_thermostat(temperature)
+
+            # Only send commands if the thermostat value has changed.
+            if old_value == self._state.thermostat:
+                return
+
             await self._send_cmd(
                 Command.SET_THERMOSTAT.value + bytes([self._state.thermostat])
             )
@@ -286,7 +293,13 @@ class Device:
             await self.connect(retry_attempts=1)
 
         async with self._state_lock:
+            old_value = self._state.flame_color
             self._state.flame_color = color
+
+            # Only send commands if the color has changed.
+            if old_value == color:
+                return
+
             await self._send_cmd(
                 Command.SET_FLAME_COLOR.value + bytes([self._state.flame_color.value])
             )
@@ -302,7 +315,13 @@ class Device:
             await self.connect(retry_attempts=1)
 
         async with self._state_lock:
+            old_value = self._state.fuel_color
             self._state.fuel_color = color
+
+            # Only send commands if the color has changed.
+            if old_value == color:
+                return
+
             await self._send_cmd(
                 Command.SET_FUEL_COLOR.value + bytes([self._state.fuel_color.value])
             )
