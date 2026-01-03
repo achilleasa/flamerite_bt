@@ -1,7 +1,7 @@
 [project]
 name = "flamerite_bt"
 version = "0.1.0"
-description = "Control Flamerite fireplace devices over bluetooth"
+description = "An unofficial python package for controlling Flamerite fireplace devices via bluetooth"
 authors = [
     {name = "Achilleas Anagnostopoulos",email = "achilleas.imap.mbox@gmail.com"}
 ]
@@ -20,3 +20,31 @@ packages = [{include = "flamerite_bt", from = "src"}]
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^9.0.2"
+pytest-subtests = "^0.15.0"
+pytest-cov = "^7.0.0"
+pytest-asyncio = "^1.3.0"
+pytest-mock = "^3.15.1"
+poetry-dynamic-versioning = "^1.9.1"
+ruff = "^0.14.10"
+
+[tool.poetry-dynamic-versioning]
+bump = false
+enable = true
+format-jinja = """
+    {%- if distance == 0 -%}
+        {{ serialize_pep440(base, stage, revision) }}
+    {%- elif revision is not none -%}
+        {{ serialize_pep440(base, stage, revision + 1, dev=distance) }}
+    {%- else -%}
+        {{ serialize_pep440(bump_version(base), stage, revision, dev=distance) }}
+    {%- endif -%}
+"""
+
+[tool.coverage.run]
+relative_files = true
+
+[tool.pytest.ini_options]
+syncio_mode = 'auto'
