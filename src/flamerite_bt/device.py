@@ -185,12 +185,12 @@ class Device:
         return self._manufacturer
 
     @property
-    def fw_revision(self) -> str:
+    def firmware_revision(self) -> str:
         """Return the firmware revision of the connected device."""
         return self._fw_revision
 
     @property
-    def hw_revision(self) -> str:
+    def hardware_revision(self) -> str:
         """Return the hardware revision of the connected device."""
         return self._hw_revision
 
