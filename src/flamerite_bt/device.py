@@ -61,6 +61,10 @@ class Device:
         device_name = (advertisment_data.local_name or "").strip()
         if device_name not in SUPPORTED_DEVICE_NAMES:
             return False
+        # Some variants advertise only a name with no service UUIDs.
+        # If nothing is advertised, accept on the name match alone.
+        if not advertisment_data.service_uuids:
+            return True
         for svc_uuid in SUPPORTED_DEVICE_SVC_UUIDS:
             if svc_uuid in advertisment_data.service_uuids:
                 return True

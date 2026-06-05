@@ -5,11 +5,14 @@ from unittest.mock import AsyncMock, Mock, call, patch
 from attr import dataclass
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak.backends.device import BLEDevice
+from bleak.backends.scanner import AdvertisementData
 from bleak_retry_connector import BleakClient  # type: ignore
 from bleak_retry_connector import establish_connection
 
 from flamerite_bt.const import (
     ARCTECH_FOTH_PROFILE,
+    SUPPORTED_DEVICE_NAMES,
+    SUPPORTED_DEVICE_SVC_UUIDS,
     THERMOSTAT_MAX,
     THERMOSTAT_MIN,
     Color,
@@ -48,6 +51,74 @@ class TestDevice(unittest.TestCase):
                 self.assertFalse(device.is_connected)
 
             asyncio.run(run_connect())
+
+    def test_is_supported_device(self) -> None:
+        @dataclass
+        class Spec:
+            descr: str
+            local_name: str | None
+            service_uuids: list[str]
+            exp_supported: bool
+
+        supported_name = SUPPORTED_DEVICE_NAMES[0]
+        supported_uuid = SUPPORTED_DEVICE_SVC_UUIDS[0]
+
+        specs = [
+            Spec(
+                descr="Supported name and matching service UUID",
+                local_name=supported_name,
+                service_uuids=[supported_uuid],
+                exp_supported=True,
+            ),
+            Spec(
+                descr=(
+                    "Supported name with no advertised service UUIDs is "
+                    "accepted on the name match alone"
+                ),
+                local_name=supported_name,
+                service_uuids=[],
+                exp_supported=True,
+            ),
+            Spec(
+                descr="Surrounding whitespace on the name is ignored",
+                local_name=f"  {supported_name}  ",
+                service_uuids=[],
+                exp_supported=True,
+            ),
+            Spec(
+                descr="Supported name but non-matching service UUID",
+                local_name=supported_name,
+                service_uuids=["0000abcd-0000-1000-8000-00805f9b34fb"],
+                exp_supported=False,
+            ),
+            Spec(
+                descr="Unsupported name is rejected",
+                local_name="Some Other Device",
+                service_uuids=[supported_uuid],
+                exp_supported=False,
+            ),
+            Spec(
+                descr="Missing name is rejected",
+                local_name=None,
+                service_uuids=[supported_uuid],
+                exp_supported=False,
+            ),
+        ]
+
+        for spec in specs:
+            with self.subTest(spec.descr):
+                adv = AdvertisementData(
+                    local_name=spec.local_name,
+                    manufacturer_data={},
+                    service_data={},
+                    service_uuids=spec.service_uuids,
+                    rssi=-60,
+                    tx_power=None,
+                    platform_data=(),
+                )
+                self.assertEqual(
+                    Device.is_supported_device(adv), spec.exp_supported
+                )
 
     def test_query_state(self) -> None:
         ble_device = self._ble_device_mock()
