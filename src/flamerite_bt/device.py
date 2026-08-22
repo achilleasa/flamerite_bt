@@ -12,7 +12,7 @@ from bleak_retry_connector import BleakClient  # type: ignore
 from bleak_retry_connector import establish_connection
 
 from .const import (
-    ARCTECH_FOTH_PROFILE,
+    ARCTECH_PROFILE,
     DEVICE_RESPONSE_TIMEOUT_SECONDS,
     NITRAFLAME_PROFILE,
     SUPPORTED_DEVICE_NAMES,
@@ -33,7 +33,7 @@ class Device:
 
     _ble_device: BLEDevice
     _command_profile: CommandProfile
-    _connection: BleakClient
+    _connection: BleakClient | None
     _connection_lock = asyncio.Lock()
     _is_connected: bool
     _mac: str
@@ -49,6 +49,7 @@ class Device:
     def __init__(self, ble_device: BLEDevice) -> None:
         self._ble_device = ble_device
         self._command_profile = NITRAFLAME_PROFILE
+        self._connection = None
         self._is_connected = False
         self._mac = ble_device.address
         self._name = ble_device.name or ""
@@ -69,16 +70,19 @@ class Device:
     def _detect_command_profile(self) -> CommandProfile:
         """Detect the command profile for the connected device."""
         manufacturer = self._manufacturer.strip().upper()
-        model_number = self._model_number.strip().upper()
 
-        if manufacturer == "ARCTECH" and model_number in {"FOTH", "F0TH"}:
-            return ARCTECH_FOTH_PROFILE
+        if manufacturer == "ARCTECH":
+            return ARCTECH_PROFILE
 
         return NITRAFLAME_PROFILE
 
-    def disconnected_callback(self, client):  # pylint: disable=unused-argument
+    def disconnected_callback(self, client: BleakClient) -> None:
         """Handle disconnection events."""
 
+        if client is not self._connection:
+            return
+
+        self._connection = None
         self._is_connected = False
         _LOGGER.warning("Disconnected from %s", self._mac)
 
@@ -89,10 +93,11 @@ class Device:
             return
 
         async with self._connection_lock:
+            connection = None
             try:
                 _LOGGER.debug("Connecting to %s", self._mac)
 
-                self._connection = await establish_connection(
+                connection = await establish_connection(
                     client_class=BleakClient,
                     device=self._ble_device,
                     name=self._mac,
@@ -101,6 +106,7 @@ class Device:
                     use_services_cache=True,
                 )
 
+                self._connection = connection
                 self._is_connected = True
 
                 self._model_number = await self._read_attr(
@@ -142,16 +148,47 @@ class Device:
                     DeviceAttribute.CMD_RESPONSE.value, self._on_notify
                 )
             except BleakError as ex:
+                if connection is not None:
+                    await self._disconnect_after_failed_setup(connection)
+                else:
+                    self._connection = None
+                    self._is_connected = False
                 _LOGGER.error("Failed to connect to %s: %s", self._mac, ex)
-                self._is_connected = False
+            except BaseException:
+                if connection is not None:
+                    await self._disconnect_after_failed_setup(connection)
+                else:
+                    self._connection = None
+                    self._is_connected = False
+                raise
+
+    async def _disconnect_after_failed_setup(
+        self, connection: BleakClient
+    ) -> None:
+        """Disconnect and clear a client after setup fails."""
+        try:
+            await connection.disconnect()
+        except Exception as ex:
+            _LOGGER.warning(
+                "Failed to disconnect from %s after setup failure: %s",
+                self._mac,
+                ex,
+            )
+        finally:
+            self._connection = None
+            self._is_connected = False
 
     async def disconnect(self) -> None:
         """Disconnect the device."""
-        if not self._is_connected:
+        connection = self._connection
+        if not self._is_connected or connection is None:
             return
 
-        await self._connection.disconnect()
-        self._is_connected = False
+        try:
+            await connection.disconnect()
+        finally:
+            self._connection = None
+            self._is_connected = False
         _LOGGER.debug("Disconnected from %s", self._mac)
 
     def update_ble_device(self, ble_device: BLEDevice) -> None:
@@ -310,6 +347,49 @@ class Device:
                 )
         return cmds
 
+    async def _set_heat_mode_with_explicit_commands(
+        self, mode: HeatMode
+    ) -> None:
+        """Set heat mode using explicit heat on/off and level toggle commands."""
+        old_value = self._state.heat_mode
+
+        # Only send commands if the heat mode has changed.
+        if old_value == mode:
+            return
+
+        profile = self._command_profile
+
+        if mode == HeatMode.OFF:
+            self._state.heat_mode = HeatMode.OFF
+            await self._send_cmd(profile.heat_off)
+            return
+
+        if old_value == HeatMode.OFF:
+            self._state.heat_mode = HeatMode.LOW
+            await self._send_cmd(profile.heat_on)
+            await self._send_cmd(
+                Command.SET_THERMOSTAT.value + bytes([self._state.thermostat])
+            )
+
+        if mode == HeatMode.HIGH and self._state.heat_mode != HeatMode.HIGH:
+            self._state.heat_mode = HeatMode.HIGH
+            await self._send_cmd(profile.heat_toggle_level)
+            return
+
+        if mode == HeatMode.LOW and self._state.heat_mode == HeatMode.HIGH:
+            self._state.heat_mode = HeatMode.LOW
+            await self._send_cmd(profile.heat_toggle_level)
+
+    @property
+    def _has_explicit_heat_commands(self) -> bool:
+        """Return true if the current profile has explicit heat commands."""
+        profile = self._command_profile
+        return (
+            profile.heat_on is not None
+            and profile.heat_off is not None
+            and profile.heat_toggle_level is not None
+        )
+
     async def set_heat_mode(self, mode: HeatMode) -> None:
         """Set the heat mode."""
         if not self._is_connected:
@@ -321,6 +401,10 @@ class Device:
                 _LOGGER.warning(
                     "Cannot set heat mode when device is powered off"
                 )
+                return
+
+            if self._has_explicit_heat_commands:
+                await self._set_heat_mode_with_explicit_commands(mode)
                 return
 
             old_value = self._state.heat_mode
